@@ -999,7 +999,7 @@ function claimNeighbourhood(id, name) {
     showToast("The Flop hasn't been revealed yet");
     return;
   }
-  if (isReservedPrivateCard(id) && !claims[id]) {
+  if (isReservedPrivateCard(id) && !claims[id] && !isWildcard) {
     showToast(name + ' is reserved for a private card and must be claimed from the Cards screen');
     return;
   }
