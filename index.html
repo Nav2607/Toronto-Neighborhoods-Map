@@ -764,7 +764,7 @@ function normalizePrivateState(raw) {
 
 function buildFreshPrivateState(excludedIds = []) {
   const excludedSet = new Set(excludedIds);
-  const available = shuffleArray(FLOP_POOL_IDS.filter(id => !excludedSet.has(id)));
+  const available = shuffleArray(PLAYABLE_NEIGHBOURHOOD_IDS.filter(id => !excludedSet.has(id)));
   const nextState = {};
 
   Object.keys(TEAMS).forEach((team, index) => {
@@ -802,9 +802,11 @@ function ensurePrivateHands(raw) {
   return nextState;
 }
 
-// ---- The 64-card Flop deck ----
-// Only these neighbourhoods can ever appear in the Flop (revealed or drawn later).
-const FLOP_POOL_IDS = ['085','087','114','089','111','115','112','110','108','090','088','086','091','093','083','084','082','081','080','092','109','107','094','095','079','078','077','076','096','106','102','101','097','098','075','073','071','074','056','099','104','100','103','041','042','044','043','054','058','057','059','060','066','067','068','069','065','064','062','063','070','061','072','055'];
+// ---- The playable pool ----
+// 64 neighbourhoods total, minus the 15 private-card reserve slots, plus 3 wildcards.
+const ALL_NEIGHBOURHOOD_IDS = ['085','087','114','089','111','115','112','110','108','090','088','086','091','093','083','084','082','081','080','092','109','107','094','095','079','078','077','076','096','106','102','101','097','098','075','073','071','074','056','099','104','100','103','041','042','044','043','054','058','057','059','060','066','067','068','069','065','064','062','063','070','061','072','055'];
+const PRIVATE_RESERVE_COUNT = 15;
+const PLAYABLE_NEIGHBOURHOOD_IDS = ALL_NEIGHBOURHOOD_IDS.slice(0, ALL_NEIGHBOURHOOD_IDS.length - PRIVATE_RESERVE_COUNT);
 let flop = [];              // current flop array (ids). Empty = not revealed yet.
 let flopRevealed = false;
 let privateState = {};
@@ -1020,7 +1022,7 @@ function claimNeighbourhood(id, name) {
 function remainingPool() {
   const inFlopSet = new Set(flop);
   const reservedSet = new Set(getReservedPrivateIds());
-  return FLOP_POOL_IDS.filter(id => !inFlopSet.has(id) && !reservedSet.has(id) && !claims[id]);
+  return PLAYABLE_NEIGHBOURHOOD_IDS.filter(id => !inFlopSet.has(id) && !reservedSet.has(id) && !claims[id]);
 }
 
 function drawOne() {
@@ -1037,7 +1039,7 @@ function saveFlop() {
 function buildFreshFlop() {
   const wildcardCount = Math.floor(Math.random() * (WILDCARD_IDS.length + 1));
   const selectedWildcards = shuffleArray([...WILDCARD_IDS]).slice(0, wildcardCount);
-  const regularCards = shuffleArray(FLOP_POOL_IDS).slice(0, FLOP_SIZE - selectedWildcards.length);
+  const regularCards = shuffleArray(PLAYABLE_NEIGHBOURHOOD_IDS).slice(0, FLOP_SIZE - selectedWildcards.length);
   return shuffleArray([...selectedWildcards, ...regularCards]);
 }
 
