@@ -688,12 +688,44 @@ let currentMode = 'team1'; // who a map tap claims for; any device can change th
 
 let claims = {};
 let firebaseReady = false;
+let firebaseConfigured = false;
 let claimsRef = null;
 let flopRef = null;
 let privateRef = null;
 
 let ELIGIBLE_IDS = [];
 let nameById = {};
+
+function isFirebaseConfigured() {
+  return !!firebaseConfig &&
+    typeof firebaseConfig === 'object' &&
+    firebaseConfig.apiKey &&
+    !String(firebaseConfig.apiKey).startsWith('YOUR_') &&
+    !String(firebaseConfig.apiKey).startsWith('PASTE_');
+}
+
+function loadPersistedState() {
+  try {
+    const raw = localStorage.getItem('tnc_game_state_v1');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn('Could not load local game state', e);
+    return null;
+  }
+}
+
+function savePersistedState() {
+  try {
+    localStorage.setItem('tnc_game_state_v1', JSON.stringify({
+      claims,
+      flop,
+      flopRevealed,
+      privateState
+    }));
+  } catch (e) {
+    console.warn('Could not save local game state', e);
+  }
+}
 
 function shuffleArray(array) {
   const copy = [...array];
@@ -778,7 +810,15 @@ let flopRevealed = false;
 let privateState = {};
 let privateTickTimer = null;
 
-privateState = ensurePrivateHands({});
+const persistedState = loadPersistedState();
+if (persistedState) {
+  claims = persistedState.claims || {};
+  flop = Array.isArray(persistedState.flop) ? persistedState.flop : [];
+  flopRevealed = !!persistedState.flopRevealed;
+  privateState = normalizePrivateState(persistedState.privateState || {});
+} else {
+  privateState = ensurePrivateHands({});
+}
 
 const toastEl = document.getElementById('toast');
 let toastTimer = null;
@@ -851,8 +891,12 @@ function showScreen(which) {
 }
 
 function initFirebase() {
-  if (firebaseConfig.apiKey.startsWith('PASTE_')) {
-    setStatus('Firebase not configured yet', 'error');
+  firebaseConfigured = isFirebaseConfigured();
+  if (!firebaseConfigured) {
+    setStatus('Using local save only', 'connected');
+    savePersistedState();
+    renderFlopGrid();
+    renderPrivateCardsList();
     return;
   }
   try {
@@ -864,6 +908,7 @@ function initFirebase() {
     claimsRef.on('value', (snapshot) => {
       claims = snapshot.val() || {};
       firebaseReady = true;
+      savePersistedState();
       setStatus('Live — synced', 'connected');
       repaintAllClaims();
       renderFlopGrid();
@@ -881,12 +926,14 @@ function initFirebase() {
         flop = [];
         flopRevealed = false;
       }
+      savePersistedState();
       renderFlopGrid();
     });
 
     privateRef.on('value', (snapshot) => {
       const val = snapshot.val() || {};
       privateState = ensurePrivateHands(val);
+      savePersistedState();
       renderPrivateCardsList();
     });
 
@@ -935,7 +982,11 @@ function claimNeighbourhood(id, name) {
   if (!myRole) { openRoleOverlay(); return; }
 
   if (currentMode === 'clear') {
-    claimsRef.child(id).remove();
+    delete claims[id];
+    savePersistedState();
+    if (claimsRef && firebaseReady) claimsRef.child(id).remove();
+    repaintAllClaims();
+    renderFlopGrid();
     showToast(name + ' — cleared');
     return;
   }
@@ -959,7 +1010,11 @@ function claimNeighbourhood(id, name) {
     return;
   }
 
-  claimsRef.child(id).set(currentMode);
+  claims[id] = currentMode;
+  savePersistedState();
+  if (claimsRef && firebaseReady) claimsRef.child(id).set(currentMode);
+  repaintAllClaims();
+  renderFlopGrid();
   showToast(name + ' → ' + TEAMS[currentMode].name);
 }
 
@@ -979,7 +1034,8 @@ function drawOne() {
 }
 
 function saveFlop() {
-  if (flopRef) flopRef.set({ revealed: flopRevealed, ids: flop });
+  savePersistedState();
+  if (flopRef && firebaseReady) flopRef.set({ revealed: flopRevealed, ids: flop });
 }
 
 function buildFreshFlop() {
@@ -1007,9 +1063,10 @@ function resetGame() {
   flopRevealed = false;
   privateState = freshPrivateState;
 
-  if (claimsRef) claimsRef.set({});
-  if (flopRef) flopRef.set({ revealed: false, ids: flop });
-  if (privateRef) privateRef.set(privateState);
+  savePersistedState();
+  if (claimsRef && firebaseReady) claimsRef.set({});
+  if (flopRef && firebaseReady) flopRef.set({ revealed: false, ids: flop });
+  if (privateRef && firebaseReady) privateRef.set(privateState);
 
   repaintAllClaims();
   renderFlopGrid();
@@ -1123,7 +1180,8 @@ function revealPrivateCard(team) {
     lastReveal: s.lastReveal
   };
   privateState[team] = updated;
-  if (privateRef) privateRef.child(team).set(updated);
+  savePersistedState();
+  if (privateRef && firebaseReady) privateRef.child(team).set(updated);
   const revealedId = s.hand[s.revealed];
   renderPrivateCardsList();
   showToast(TEAMS[team].name + ' revealed ' + (nameById[revealedId] || '#' + revealedId));
@@ -1156,7 +1214,7 @@ function claimPrivateCard(team, cardId) {
     showToast(nameById[cardId] + ' is already claimed');
     return;
   }
-  claimsRef.child(cardId).set(team);
+  claims[cardId] = team;
   const updated = {
     hand: s.hand,
     revealed: s.revealed,
@@ -1164,7 +1222,10 @@ function claimPrivateCard(team, cardId) {
     lastReveal: s.lastReveal
   };
   privateState[team] = updated;
-  if (privateRef) privateRef.child(team).set(updated);
+  savePersistedState();
+  if (claimsRef && firebaseReady) claimsRef.child(cardId).set(team);
+  if (privateRef && firebaseReady) privateRef.child(team).set(updated);
+  repaintAllClaims();
   renderPrivateCardsList();
   showToast(nameById[cardId] + ' claimed by ' + TEAMS[team].name);
 }
