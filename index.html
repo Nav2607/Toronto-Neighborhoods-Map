@@ -1053,6 +1053,11 @@ function resetGame() {
     return;
   }
 
+  const confirmed = window.confirm('Reset the whole game? This will clear all claims, flop cards, and private cards.');
+  if (!confirmed) {
+    return;
+  }
+
   const freshFlop = buildFreshFlop();
   const freshPrivateState = buildFreshPrivateState(freshFlop);
 
