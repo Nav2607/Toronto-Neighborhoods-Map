@@ -989,16 +989,6 @@ function claimNeighbourhood(id, name) {
     return;
   }
 
-  const isWildcard = WILDCARD_IDS.includes(id);
-  const eligible = ELIGIBLE_IDS.includes(id) || isWildcard;
-  if (!eligible) {
-    showToast(name + ' is not in play this game');
-    return;
-  }
-  if (!flopRevealed) {
-    showToast("The Flop hasn't been revealed yet");
-    return;
-  }
   if (claims[id]) {
     showToast(name + ' is already claimed');
     return;
