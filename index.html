@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Toronto Neighbourhood Challenge</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -21,11 +21,17 @@
     margin: 0;
     padding: 0;
     height: 100%;
+    min-height: 100dvh;
     width: 100%;
     overflow: hidden;
     font-family: 'Segoe UI', Arial, sans-serif;
     background: var(--water);
     touch-action: manipulation;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+  button, input, select, textarea {
+    font: inherit;
   }
 
   /* ---------- role select overlay ---------- */
@@ -61,10 +67,11 @@
   /* ---------- shared header ---------- */
   #header {
     text-align: center;
-    padding: 6px 40px 4px 8px;
+    padding: max(8px, env(safe-area-inset-top)) 56px 8px 8px;
     background: var(--water);
     position: relative;
     z-index: 1200;
+    min-height: 54px;
   }
   #header h1 {
     margin: 1px 0 0;
@@ -97,7 +104,7 @@
   /* ---------- screen switching ---------- */
   .screen {
     position: absolute;
-    top: 46px;
+    top: 54px;
     left: 0;
     right: 0;
     bottom: 0;
@@ -116,6 +123,7 @@
     align-items: stretch;
     z-index: 1500;
     box-shadow: 0 -2px 8px rgba(0,0,0,0.3);
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
   .nav-btn {
     flex: 1;
@@ -124,7 +132,7 @@
     color: #b9c9b9;
     font-weight: 700;
     font-size: 13px;
-    padding: 10px 4px 8px;
+    padding: 10px 4px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -132,6 +140,7 @@
     gap: 2px;
     cursor: pointer;
     position: relative;
+    min-height: 54px;
   }
   .nav-btn .nav-icon { font-size: 18px; line-height: 1; }
   .nav-btn.active { color: #ffffff; }
@@ -159,6 +168,12 @@
     left: 0;
     right: 0;
     background: var(--water);
+  }
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    font-size: 20px !important;
   }
   .leaflet-container { background: var(--water); font-family: 'Segoe UI', Arial, sans-serif; }
   .leaflet-interactive:focus { outline: none; }
@@ -194,10 +209,11 @@
   #search-box input {
     border: none;
     outline: none;
-    padding: 10px 14px;
-    font-size: 15px;
+    padding: 12px 14px;
+    font-size: 16px;
     border-radius: 8px;
     width: 100%;
+    min-height: 46px;
   }
   #search-results {
     max-height: 45vh;
@@ -206,10 +222,13 @@
     border-radius: 0 0 8px 8px;
   }
   #search-results div {
-    padding: 10px 14px;
+    padding: 12px 14px;
     cursor: pointer;
     font-size: 14px;
     border-top: 1px solid #eee;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
   }
   #search-results div:hover, #search-results div:active { background: #fdf6c9; }
 
@@ -229,7 +248,8 @@
     flex: 1;
     border: 2px solid transparent;
     border-radius: 8px;
-    height: 40px;
+    min-height: 44px;
+    padding: 0 6px;
     color: white;
     font-weight: 700;
     font-size: 12px;
@@ -245,7 +265,7 @@
     background: #555;
     border: 2px solid transparent;
     border-radius: 8px;
-    height: 40px;
+    min-height: 44px;
     color: white;
     font-weight: 700;
     font-size: 15px;
@@ -288,7 +308,7 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     background: linear-gradient(180deg, #eef7ec 0%, #f7f7ea 100%);
-    padding: 12px 12px 78px;
+    padding: 12px 12px calc(78px + env(safe-area-inset-bottom));
   }
   .game-section {
     background: white;
@@ -316,12 +336,13 @@
     width: 100%;
     border: none;
     border-radius: 10px;
-    padding: 18px 10px;
+    padding: 16px 10px;
     background: #3f7a3d;
     color: white;
     font-size: 16px;
     font-weight: 800;
     cursor: pointer;
+    min-height: 48px;
   }
   .waiting-note {
     text-align: center;
@@ -344,7 +365,7 @@
     padding: 10px 6px;
     text-align: center;
     cursor: pointer;
-    min-height: 64px;
+    min-height: 72px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -387,6 +408,7 @@
     font-size: 13px;
     padding: 12px;
     cursor: pointer;
+    min-height: 46px;
   }
   .reset-game-btn {
     width: 100%;
@@ -399,6 +421,7 @@
     font-size: 13px;
     padding: 12px;
     cursor: pointer;
+    min-height: 46px;
   }
   .add-card-btn:disabled {
     opacity: 0.45;
@@ -523,6 +546,18 @@
   #toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    #header h1 { font-size: 15px; }
+    #header .eyebrow { font-size: 9px; }
+    #role-tag { max-width: 72px; font-size: 9px; padding: 5px 7px; }
+    #status-banner { max-width: 46vw; font-size: 10px; }
+    #search-box { left: 6px; right: 6px; top: 6px; }
+    #team-picker-strip { gap: 6px; padding: 7px; }
+    .team-chip-btn { font-size: 11px; }
+    .flop-grid { gap: 6px; }
+    .game-section { padding: 10px; }
   }
 
   @media (min-width: 480px) {
