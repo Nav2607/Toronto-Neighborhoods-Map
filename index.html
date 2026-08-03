@@ -975,10 +975,6 @@ function setActingTeam(mode) {
 }
 
 function claimNeighbourhood(id, name) {
-  if (!firebaseReady || !claimsRef) {
-    showToast('Not connected yet — check your internet connection.');
-    return;
-  }
   if (!myRole) { openRoleOverlay(); return; }
 
   if (currentMode === 'clear') {
@@ -1188,10 +1184,6 @@ function revealPrivateCard(team) {
 }
 
 function claimPrivateCard(team, cardId) {
-  if (!firebaseReady || !claimsRef) {
-    showToast('Not connected yet — check your internet connection.');
-    return;
-  }
   if (currentMode !== team) {
     showToast('Switch to ' + TEAMS[team].name + ' to claim this card.');
     return;
