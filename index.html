@@ -617,15 +617,16 @@
   </button>
 </div>
 
+<script src="./config.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDGsOPKI4b7tybHIx6pLqlh1vGAcyaOhPQ",
-  authDomain: "toronto-map-97a17.firebaseapp.com",
-  databaseURL: "https://toronto-map-97a17-default-rtdb.firebaseio.com",
-  projectId: "toronto-map-97a17",
-  storageBucket: "toronto-map-97a17.firebasestorage.app",
-  messagingSenderId: "135266868564",
-  appId: "1:135266868564:web:f78ba32de1fbccb25dbcc1"
+const firebaseConfig = window.firebaseConfig || {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const TEAMS = {

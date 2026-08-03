@@ -1,7 +1,7 @@
 // Firebase configuration template
 // Copy this file to config.js and fill in your Firebase credentials.
 // config.js is gitignored and will NOT be committed.
-const firebaseConfig = {
+window.firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
   databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
