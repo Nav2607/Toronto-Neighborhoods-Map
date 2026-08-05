@@ -3,9 +3,9 @@
 const resolvedFirebaseConfig = firebaseConfig;
 
 const TEAMS = {
-  team1: { name: 'Team 1', color: '#e53935', emoji: '🔴' },
-  team2: { name: 'Team 2', color: '#1e88e5', emoji: '🔵' },
-  team3: { name: 'Team 3', color: '#43a047', emoji: '🟢' }
+  team1: { name: 'Team 1', color: '#e53935' },
+  team2: { name: 'Team 2', color: '#1e88e5' },
+  team3: { name: 'Team 3', color: '#43a047' }
 };
 
 // ---- Game constants ----
@@ -238,7 +238,7 @@ function setRole(role) {
 function applyRoleUI() {
   const tag = document.getElementById('role-tag');
   if (myRole && TEAMS[myRole]) {
-    tag.textContent = TEAMS[myRole].emoji + ' ' + TEAMS[myRole].name;
+    tag.textContent = TEAMS[myRole].name;
     tag.style.background = TEAMS[myRole].color;
   } else {
     tag.textContent = 'Set role';
@@ -550,7 +550,7 @@ function renderFlopGrid() {
     grid.innerHTML = '';
     addBtn.style.display = 'none';
     sub.textContent = 'Tap below to randomly draw 9 neighbourhoods into play.';
-    revealWrap.innerHTML = '<button class="reveal-flop-btn" onclick="revealFlop()">🎲 Reveal the Flop</button>';
+    revealWrap.innerHTML = '<button class="reveal-flop-btn" onclick="revealFlop()">Reveal the Flop</button>';
     if (typeof layerById !== 'undefined') repaintAllClaims();
     return;
   }
@@ -687,7 +687,7 @@ function renderPrivateCardsList() {
     head.className = 'team-card-head';
     const title = document.createElement('div');
     title.className = 'team-card-title';
-    title.textContent = TEAMS[team].emoji + ' ' + TEAMS[team].name;
+    title.textContent = TEAMS[team].name;
     head.appendChild(title);
 
     const s = privateState[team] || { hand: [], revealed: 0, used: [], lastReveal: 0 };

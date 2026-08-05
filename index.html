@@ -58,17 +58,17 @@
   <div class="game-section">
     <div style="display:flex; justify-content:space-between; margin-bottom:8px; gap:8px;">
       <button id="btn-clear-map-game" onclick="toggleClearMode()" style="width:auto; padding:10px 14px; border-radius:999px;">✕ Clear a Claim</button>
-      <button id="reset-game-btn" class="reset-game-btn" onclick="resetGame()" style="display:none; width:auto; padding:10px 14px; border-radius:999px;">🔄 Reset Game</button>
+      <button id="reset-game-btn" class="reset-game-btn" onclick="resetGame()" style="display:none; width:auto; padding:10px 14px; border-radius:999px;">Reset Game</button>
     </div>
-    <h2>🃏 The Flop</h2>
+    <h2>The Flop</h2>
     <p class="section-sub" id="flop-sub">Any neighbourhood in the Flop can be claimed. Tap a tile to claim it for your team.</p>
     <div id="flop-reveal-wrap"></div>
     <div class="flop-grid" id="flop-grid"></div>
-    <button class="add-card-btn" id="add-card-btn" style="display:none;" onclick="addCardToFlop()">➕ Add New Card to Flop</button>
+    <button class="add-card-btn" id="add-card-btn" style="display:none;" onclick="addCardToFlop()">Add Card to Flop</button>
   </div>
 
   <div class="game-section">
-    <h2>🔒 Private Cards</h2>
+    <h2>Private Cards</h2>
     <p class="section-sub">Each team has 5 private cards, revealed one per hour. A revealed-but-unused card lets that team claim ANY neighbourhood, even ones not in the Flop.</p>
     <div class="armed-banner" id="armed-banner"></div>
     <div id="private-cards-list"></div>
@@ -78,11 +78,15 @@
 <!-- ================= NAV BAR ================= -->
 <div id="nav-bar">
   <button class="nav-btn active" id="nav-map" onclick="showScreen('map')">
-    <span class="nav-icon">🗺️</span>
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v14L9 18l6 2.5 6-2.5v-14L15 6.5 9 4Z"/><path d="M9 4v14"/><path d="M15 6.5v14"/></svg>
+    </span>
     <span>Map</span>
   </button>
   <button class="nav-btn" id="nav-game" onclick="showScreen('game')">
-    <span class="nav-icon">🃏</span>
+    <span class="nav-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="12" height="16" rx="1.6"/><path d="M9.5 5V3.6a1.6 1.6 0 0 1 1.6-1.6h7.3a1.6 1.6 0 0 1 1.6 1.6v13a1.6 1.6 0 0 1-1.6 1.6H17"/></svg>
+    </span>
     <span>Flop &amp; Cards</span>
     <span class="nav-badge" id="nav-badge">!</span>
   </button>
