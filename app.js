@@ -1,12 +1,6 @@
-const firebaseConfig = window.firebaseConfig || {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.firebasestorage.app",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+// config.js (loaded before this file) declares `const firebaseConfig = {...}`,
+// which becomes a global lexical binding this script can read directly.
+const resolvedFirebaseConfig = firebaseConfig;
 
 const TEAMS = {
   team1: { name: 'Team 1', color: '#e53935', emoji: '🔴' },
@@ -43,11 +37,11 @@ let nameById = {};
 let loadedGeoData = null;
 
 function isFirebaseConfigured() {
-  return !!firebaseConfig &&
-    typeof firebaseConfig === 'object' &&
-    firebaseConfig.apiKey &&
-    !String(firebaseConfig.apiKey).startsWith('YOUR_') &&
-    !String(firebaseConfig.apiKey).startsWith('PASTE_');
+  return !!resolvedFirebaseConfig &&
+    typeof resolvedFirebaseConfig === 'object' &&
+    resolvedFirebaseConfig.apiKey &&
+    !String(resolvedFirebaseConfig.apiKey).startsWith('YOUR_') &&
+    !String(resolvedFirebaseConfig.apiKey).startsWith('PASTE_');
 }
 
 function loadPersistedState() {
@@ -287,7 +281,7 @@ function initFirebase() {
     return;
   }
   try {
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(resolvedFirebaseConfig);
     claimsRef = firebase.database().ref('claims');
     flopRef = firebase.database().ref('flop');       // { revealed: bool, ids: [...] }
     privateRef = firebase.database().ref('privateCards');
