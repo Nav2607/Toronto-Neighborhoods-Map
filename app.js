@@ -348,6 +348,45 @@ function toggleClearMode() {
   showToast(clearMode ? 'Clear mode on — tap a claimed spot to clear it' : 'Clear mode off');
 }
 
+// ---- Keep a neighbourhood's "private card" bookkeeping in sync with the
+// map/flop claim state, no matter which path the claim came through
+// (map tap, Flop tile tap, or the "Claim this card" button). This is
+// also what makes stealing work correctly: if Team 2 claims a
+// neighbourhood that happens to sit in Team 1's private hand (e.g. via a
+// wildcard), Team 1's copy of that card needs to flip to "used" too, so
+// Team 1 can no longer claim it — even though Team 1 never clicked
+// anything themselves. ----
+function ownerTeamOfCard(id) {
+  return Object.keys(TEAMS).find(team => {
+    const s = privateState[team];
+    return s && Array.isArray(s.hand) && s.hand.includes(id);
+  });
+}
+
+function markCardUsedForOwner(id) {
+  const owner = ownerTeamOfCard(id);
+  if (!owner) return;
+  const s = privateState[owner] || { hand: [], revealed: 0, used: [], lastReveal: 0 };
+  if (s.used.includes(id)) return;
+  const updated = { hand: s.hand, revealed: s.revealed, used: [...s.used, id], lastReveal: s.lastReveal };
+  privateState[owner] = updated;
+  savePersistedState();
+  if (privateRef && firebaseReady) privateRef.child(owner).set(updated);
+  renderPrivateCardsList();
+}
+
+function unmarkCardUsedForOwner(id) {
+  const owner = ownerTeamOfCard(id);
+  if (!owner) return;
+  const s = privateState[owner] || { hand: [], revealed: 0, used: [], lastReveal: 0 };
+  if (!s.used.includes(id)) return;
+  const updated = { hand: s.hand, revealed: s.revealed, used: s.used.filter(x => x !== id), lastReveal: s.lastReveal };
+  privateState[owner] = updated;
+  savePersistedState();
+  if (privateRef && firebaseReady) privateRef.child(owner).set(updated);
+  renderPrivateCardsList();
+}
+
 function claimNeighbourhood(id, name) {
   if (!myRole) { openRoleOverlay(); return; }
 
@@ -359,6 +398,7 @@ function claimNeighbourhood(id, name) {
     delete claims[id];
     savePersistedState();
     if (claimsRef && firebaseReady) claimsRef.child(id).remove();
+    unmarkCardUsedForOwner(id);
     repaintAllClaims();
     renderFlopGrid();
     showToast(name + ' — cleared');
@@ -373,6 +413,7 @@ function claimNeighbourhood(id, name) {
   claims[id] = myRole;
   savePersistedState();
   if (claimsRef && firebaseReady) claimsRef.child(id).set(myRole);
+  markCardUsedForOwner(id);
   repaintAllClaims();
   renderFlopGrid();
   showToast(name + ' → ' + TEAMS[myRole].name);
@@ -604,16 +645,9 @@ function claimPrivateCard(team, cardId) {
     return;
   }
   claims[cardId] = team;
-  const updated = {
-    hand: s.hand,
-    revealed: s.revealed,
-    used: [...s.used, cardId],
-    lastReveal: s.lastReveal
-  };
-  privateState[team] = updated;
   savePersistedState();
   if (claimsRef && firebaseReady) claimsRef.child(cardId).set(team);
-  if (privateRef && firebaseReady) privateRef.child(team).set(updated);
+  markCardUsedForOwner(cardId);
   repaintAllClaims();
   renderPrivateCardsList();
   showToast(nameById[cardId] + ' claimed by ' + TEAMS[team].name);
@@ -696,7 +730,12 @@ function renderPrivateCardsList() {
       tile.className = 'flop-tile';
       if (i < s.revealed) {
         const cardId = s.hand[i];
-        const isUsed = s.used.includes(cardId);
+        const claimedByTeam = claims[cardId];
+        // A card counts as "used" either because this team claimed it
+        // themselves (s.used) or because another team claimed it out from
+        // under them (e.g. via a wildcard) — either way it's no longer
+        // claimable, so both cases must disable the button.
+        const isUsed = s.used.includes(cardId) || !!claimedByTeam;
         tile.textContent = '#' + cardId + ' — ' + (nameById[cardId] || 'Unknown');
         tile.style.background = isUsed ? '#a9b2a9' : '#fdf6c9';
         tile.style.color = isUsed ? '#4a4a4a' : '#1f2d1f';
@@ -711,11 +750,20 @@ function renderPrivateCardsList() {
           const usedTag = document.createElement('div');
           usedTag.style.fontSize = '11px';
           usedTag.style.opacity = '0.7';
-          usedTag.textContent = 'Already claimed';
+          usedTag.textContent = (claimedByTeam && claimedByTeam !== team && TEAMS[claimedByTeam])
+            ? 'Claimed by ' + TEAMS[claimedByTeam].name + ' — no longer available'
+            : 'Already claimed';
           tile.appendChild(usedTag);
         }
       } else {
+        // Hidden card — was inheriting white text from the team-colored
+        // card background (poor contrast on the pale tile). Style it
+        // explicitly as a dim, dashed placeholder instead.
         tile.textContent = 'Hidden private card';
+        tile.style.background = 'rgba(255,255,255,0.14)';
+        tile.style.color = 'rgba(255,255,255,0.65)';
+        tile.style.border = '2px dashed rgba(255,255,255,0.35)';
+        tile.style.fontWeight = '600';
       }
       cardsGrid.appendChild(tile);
     }
