@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Toronto Neighbourhood Challenge</title>
+<title>Turf Scramble — Toronto Neighbourhood Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
@@ -16,16 +19,17 @@
 <body>
 
 <div id="role-overlay">
+  <div class="role-eyebrow">STATESIDE SCRAMBLE</div>
   <h1>Who is this device?</h1>
   <p>Pick your team. Your team's Private Cards will only show up on devices set to that team — other teams and the map won't be able to see your card details. Anyone can claim regions, reveal the Flop, and add/remove Flop cards from any device.</p>
-  <button class="role-btn" id="role-team1" style="background:#e53935;" onclick="setRole('team1')">🔴 Team 1</button>
-  <button class="role-btn" id="role-team2" style="background:#1e88e5;" onclick="setRole('team2')">🔵 Team 2</button>
-  <button class="role-btn" id="role-team3" style="background:#43a047;" onclick="setRole('team3')">🟢 Team 3</button>
+  <button class="role-btn" id="role-team1" style="background:#e53935;" onclick="setRole('team1')"><span class="role-dot"></span>Team 1</button>
+  <button class="role-btn" id="role-team2" style="background:#1e88e5;" onclick="setRole('team2')"><span class="role-dot"></span>Team 2</button>
+  <button class="role-btn" id="role-team3" style="background:#43a047;" onclick="setRole('team3')"><span class="role-dot"></span>Team 3</button>
 </div>
 
 <div id="header">
   <div class="eyebrow">TORONTO NEIGHBOURHOOD CHALLENGE</div>
-  <h1>Claim Your Turf</h1>
+  <h1>Stateside Scramble</h1>
   <div id="role-tag" onclick="openRoleOverlay()">···</div>
 </div>
 
@@ -36,7 +40,11 @@
   <div id="map"></div>
   <div id="status-banner">Connecting...</div>
   <div id="search-box">
-    <input type="text" id="search-input" placeholder="Find a neighbourhood...">
+    <div id="search-input-wrap">
+      <span id="search-icon">⌕</span>
+      <input type="text" id="search-input" placeholder="Find a neighbourhood…" autocomplete="off">
+      <button id="search-clear" type="button" aria-label="Clear search">✕</button>
+    </div>
     <div id="search-results"></div>
   </div>
   <div class="credit">Boundaries: City of Toronto Open Data</div>

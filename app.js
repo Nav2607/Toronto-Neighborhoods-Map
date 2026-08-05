@@ -136,12 +136,15 @@ function normalizePrivateState(raw) {
   return normalized;
 }
 
-function buildFreshPrivateState(excludedIds = [], seed = getGameSeed()) {
+function buildFreshPrivateState(seed = getGameSeed(), excludedIds = []) {
   const excludedSet = new Set(excludedIds);
+  // Randomly choose 15 of the 64 neighbourhoods (5 per team) for the
+  // private hands. Wildcards aren't in ALL_NEIGHBOURHOOD_IDS, so they can
+  // never be selected here.
   const available = shuffleArray(
-    PLAYABLE_NEIGHBOURHOOD_IDS.filter(id => !excludedSet.has(id)),
+    ALL_NEIGHBOURHOOD_IDS.filter(id => !excludedSet.has(id)),
     seed
-  );
+  ).slice(0, PRIVATE_RESERVE_COUNT);
   const nextState = {};
 
   Object.keys(TEAMS).forEach((team, index) => {
@@ -167,14 +170,13 @@ function ensurePrivateHands(raw) {
 
   const excludedIds = [
     ...existingHandIds,
-    ...Object.keys(claims),
-    ...flop
+    ...Object.keys(claims)
   ];
   const seed = getGameSeed() || createGameSeed();
   setGameSeed(seed);
   const nextState = {
     ...state,
-    ...buildFreshPrivateState(excludedIds, seed)
+    ...buildFreshPrivateState(seed, excludedIds)
   };
 
   if (privateRef) privateRef.set(nextState);
@@ -184,8 +186,11 @@ function ensurePrivateHands(raw) {
 // ---- The playable pool ----
 // 64 neighbourhoods total, minus the 15 private-card reserve slots, plus 3 wildcards.
 const ALL_NEIGHBOURHOOD_IDS = ['085','087','114','089','111','115','112','110','108','090','088','086','091','093','083','084','082','081','080','092','109','107','094','095','079','078','077','076','096','106','102','101','097','098','075','073','071','074','056','099','104','100','103','041','042','044','043','054','058','057','059','060','066','067','068','069','065','064','062','063','070','061','072','055'];
+// Each game, the 64 neighbourhoods are randomly split (seeded, so every
+// device agrees): 15 go into the three private hands (5 per team) and the
+// remaining 49 — plus the 3 wildcards — form the pool the Flop is drawn
+// from. Wildcards can never land in a private hand.
 const PRIVATE_RESERVE_COUNT = 15;
-const PLAYABLE_NEIGHBOURHOOD_IDS = ALL_NEIGHBOURHOOD_IDS.slice(0, ALL_NEIGHBOURHOOD_IDS.length - PRIVATE_RESERVE_COUNT);
 let flop = [];              // current flop array (ids). Empty = not revealed yet.
 let flopRevealed = false;
 let privateState = {};
@@ -379,7 +384,13 @@ function claimNeighbourhood(id, name) {
 function remainingPool() {
   const inFlopSet = new Set(flop);
   const reservedSet = new Set(getReservedPrivateIds());
-  return PLAYABLE_NEIGHBOURHOOD_IDS.filter(id => !inFlopSet.has(id) && !reservedSet.has(id) && !claims[id]);
+  const regular = ALL_NEIGHBOURHOOD_IDS.filter(id => !inFlopSet.has(id) && !reservedSet.has(id) && !claims[id]);
+  // Wildcards sit in the same 52-card pool as the 49 regular
+  // neighbourhoods with no special weighting — they just need to not
+  // already be in the Flop, and not already claimed (so a wildcard that
+  // was claimed and then removed from the Flop isn't drawable again).
+  const availableWildcards = WILDCARD_IDS.filter(id => !inFlopSet.has(id) && !claims[id]);
+  return [...regular, ...availableWildcards];
 }
 
 function drawOne() {
@@ -395,14 +406,19 @@ function saveFlop() {
   }
 }
 
-function buildFreshFlop(seed = getGameSeed()) {
-  const random = seed === null || seed === undefined
-    ? Math.random
-    : createSeededRandom(seed);
-  const wildcardCount = Math.floor(random() * (WILDCARD_IDS.length + 1));
-  const selectedWildcards = shuffleArray([...WILDCARD_IDS], seed + 1).slice(0, wildcardCount);
-  const regularCards = shuffleArray(PLAYABLE_NEIGHBOURHOOD_IDS, seed + 2).slice(0, FLOP_SIZE - selectedWildcards.length);
-  return shuffleArray([...selectedWildcards, ...regularCards], seed + 3);
+// flopPoolIds: the neighbourhoods available for the Flop — i.e. the 49
+// left over once the 15 private-hand cards have been dealt out.
+function buildFreshFlop(seed = getGameSeed(), flopPoolIds = ALL_NEIGHBOURHOOD_IDS) {
+  // Treat wildcards as just three more cards sitting in the same deck as
+  // the 49 regular neighbourhoods (64 total minus the 15 dealt into
+  // private hands) — a 52-card deck total — then shuffle the whole
+  // combined pool and take the first 9 for a true uniform draw.
+  // (Previously this rolled a separate wildcard *count* first and
+  // force-inserted that many, which meant an average of 1.5 wildcards
+  // landed in every single Flop instead of each wildcard having its
+  // natural ~3-in-52 chance per slot.)
+  const combinedPool = [...flopPoolIds, ...WILDCARD_IDS];
+  return shuffleArray(combinedPool, seed + 1).slice(0, FLOP_SIZE);
 }
 
 function getFlopCardLabel(id) {
@@ -422,8 +438,10 @@ function resetGame() {
 
   const nextSeed = createGameSeed();
   setGameSeed(nextSeed);
-  const freshFlop = buildFreshFlop(nextSeed);
-  const freshPrivateState = buildFreshPrivateState(freshFlop, nextSeed);
+  const freshPrivateState = buildFreshPrivateState(nextSeed);
+  const privateIds = getReservedPrivateIds(freshPrivateState);
+  const flopPoolIds = ALL_NEIGHBOURHOOD_IDS.filter(id => !privateIds.includes(id));
+  const freshFlop = buildFreshFlop(nextSeed, flopPoolIds);
 
   claims = {};
   flop = freshFlop;
@@ -443,14 +461,16 @@ function resetGame() {
 
 function revealFlop() {
   const pool = remainingPool();
-  if (pool.length + WILDCARD_IDS.length < FLOP_SIZE) {
+  if (pool.length < FLOP_SIZE) {
     showToast('Not enough cards available to reveal the Flop');
     return;
   }
   const nextSeed = getGameSeed() || createGameSeed();
   setGameSeed(nextSeed);
-  const freshFlop = buildFreshFlop(nextSeed);
-  const freshPrivateState = buildFreshPrivateState(freshFlop, nextSeed);
+  const freshPrivateState = buildFreshPrivateState(nextSeed);
+  const privateIds = getReservedPrivateIds(freshPrivateState);
+  const flopPoolIds = ALL_NEIGHBOURHOOD_IDS.filter(id => !privateIds.includes(id));
+  const freshFlop = buildFreshFlop(nextSeed, flopPoolIds);
   flop = freshFlop;
   flopRevealed = true;
   privateState = freshPrivateState;
@@ -475,7 +495,7 @@ function addCardToFlop() {
   flop = [...flop, next];
   saveFlop();
   renderFlopGrid();
-  showToast('Added ' + (nameById[next] || next) + ' to the Flop');
+  showToast('Added ' + getFlopCardLabel(next) + ' to the Flop');
 }
 
 function renderFlopGrid() {
@@ -607,12 +627,27 @@ function renderPrivateCardsList() {
   const armedBanner = document.getElementById('armed-banner');
   armedBanner.classList.remove('show');
 
-  Object.keys(TEAMS).forEach(team => {
-    const canSee = myRole === team;
+  // Only this device's own team has anything to see here — other teams'
+  // hands are never shown, even as a locked placeholder, since a device
+  // only ever needs to act on its own hand.
+  if (!myRole || !TEAMS[myRole]) {
+    const prompt = document.createElement('div');
+    prompt.className = 'team-card no-role';
+    prompt.innerHTML = '<div class="team-card-title" style="margin-bottom:4px;">Set your team to see your private cards</div>' +
+      '<div style="font-size:12px; opacity:0.75;">Each team\'s hand is only visible on that team\'s own device.</div>';
+    const pickBtn = document.createElement('button');
+    pickBtn.className = 'pick-team-btn';
+    pickBtn.textContent = 'Choose your team';
+    pickBtn.onclick = () => openRoleOverlay();
+    prompt.appendChild(pickBtn);
+    list.appendChild(prompt);
+    return;
+  }
 
+  [myRole].forEach(team => {
     const card = document.createElement('div');
-    card.className = 'team-card' + (canSee ? '' : ' locked');
-    card.style.background = canSee ? TEAMS[team].color : '';
+    card.className = 'team-card';
+    card.style.background = TEAMS[team].color;
 
     const head = document.createElement('div');
     head.className = 'team-card-head';
@@ -620,21 +655,6 @@ function renderPrivateCardsList() {
     title.className = 'team-card-title';
     title.textContent = TEAMS[team].emoji + ' ' + TEAMS[team].name;
     head.appendChild(title);
-
-    if (!canSee) {
-      const lockMsg = document.createElement('div');
-      lockMsg.className = 'locked-msg';
-      lockMsg.innerHTML = '🔒 Hidden';
-      head.appendChild(lockMsg);
-      card.appendChild(head);
-      const note = document.createElement('div');
-      note.style.fontSize = '11px';
-      note.style.opacity = '0.8';
-      note.textContent = "Only " + TEAMS[team].name + "'s own device can see this team's private cards.";
-      card.appendChild(note);
-      list.appendChild(card);
-      return;
-    }
 
     const s = privateState[team] || { hand: [], revealed: 0, used: [], lastReveal: 0 };
     const now = Date.now();
@@ -714,14 +734,16 @@ function renderPrivateCardsList() {
 // geoData.features.forEach(f => { nameById[f.properties.id] = f.properties.name; });
 
 const map = L.map('map', {
-  zoomControl: true,
+  zoomControl: false, // a single zoom control is added manually below
   minZoom: 9,
   maxZoom: 19,
   attributionControl: false,
   tap: true
 });
 
-L.control.zoom({ position: 'topright' }).addTo(map);
+// Bottom-right, out from under the search bar (which spans the top of
+// the screen and would otherwise sit on top of a top-right zoom control).
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -944,30 +966,52 @@ fetch('toronto_140_neighbourhoods.geojson')
 
     const input = document.getElementById('search-input');
     const resultsBox = document.getElementById('search-results');
+    const clearBtn = document.getElementById('search-clear');
     const featureIndex = loadedGeoData.features.map(f => ({
       name: f.properties.name,
       id: f.properties.id,
       layer: L.geoJSON(f)
     }));
 
+    function closeResults() {
+      resultsBox.innerHTML = '';
+      resultsBox.classList.remove('show');
+    }
+
     input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
+      clearBtn.classList.toggle('show', input.value.length > 0);
       resultsBox.innerHTML = '';
-      if (!q) return;
+      if (!q) { resultsBox.classList.remove('show'); return; }
       const matches = featureIndex.filter(f =>
         f.name.toLowerCase().includes(q) || f.id === q
       ).slice(0, 8);
       matches.forEach(m => {
         const div = document.createElement('div');
-        div.textContent = `#${m.id} — ${m.name}`;
+        const codeSpan = document.createElement('span');
+        codeSpan.className = 'res-code';
+        codeSpan.textContent = '#' + m.id;
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = m.name;
+        div.appendChild(codeSpan);
+        div.appendChild(nameSpan);
         div.onclick = () => {
           map.fitBounds(m.layer.getBounds(), { maxZoom: 14 });
-          resultsBox.innerHTML = '';
+          closeResults();
           input.value = m.name;
+          clearBtn.classList.add('show');
           input.blur();
         };
         resultsBox.appendChild(div);
       });
+      resultsBox.classList.toggle('show', matches.length > 0);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      closeResults();
+      clearBtn.classList.remove('show');
+      input.focus();
     });
 
     applyRoleUI();
