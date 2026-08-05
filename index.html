@@ -40,12 +40,7 @@
     <div id="search-results"></div>
   </div>
   <div class="credit">Boundaries: City of Toronto Open Data</div>
-  <div id="team-picker-strip">
-    <button class="team-chip-btn active" id="btn-team1" style="background:#e53935;" onclick="setActingTeam('team1')">Team 1</button>
-    <button class="team-chip-btn" id="btn-team2" style="background:#1e88e5;" onclick="setActingTeam('team2')">Team 2</button>
-    <button class="team-chip-btn" id="btn-team3" style="background:#43a047;" onclick="setActingTeam('team3')">Team 3</button>
-    <button id="btn-clear-map" onclick="setActingTeam('clear')">✕</button>
-  </div>
+  <button id="btn-clear-map" onclick="toggleClearMode()">✕ Clear a Claim</button>
 </div>
 
 <!-- ================= GAME SCREEN ================= -->
@@ -53,25 +48,15 @@
   <div id="game-status-banner">Connecting...</div>
 
   <div class="game-section">
-    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; gap:8px;">
+      <button id="btn-clear-map-game" onclick="toggleClearMode()" style="width:auto; padding:10px 14px; border-radius:999px;">✕ Clear a Claim</button>
       <button id="reset-game-btn" class="reset-game-btn" onclick="resetGame()" style="display:none; width:auto; padding:10px 14px; border-radius:999px;">🔄 Reset Game</button>
     </div>
     <h2>🃏 The Flop</h2>
-    <p class="section-sub" id="flop-sub">Any neighbourhood in the Flop can be claimed. Tap a tile to claim it for the team selected on the Map screen.</p>
+    <p class="section-sub" id="flop-sub">Any neighbourhood in the Flop can be claimed. Tap a tile to claim it for your team.</p>
     <div id="flop-reveal-wrap"></div>
     <div class="flop-grid" id="flop-grid"></div>
     <button class="add-card-btn" id="add-card-btn" style="display:none;" onclick="addCardToFlop()">➕ Add New Card to Flop</button>
-  </div>
-
-  <div class="game-section" id="acting-team-section">
-    <h2>🎯 Claiming As</h2>
-    <p class="section-sub">Choose which team a tap should claim for.</p>
-    <div style="display:flex; gap:8px;">
-      <button class="team-chip-btn active" id="btn-team1-game" style="background:#e53935;" onclick="setActingTeam('team1')">Team 1</button>
-      <button class="team-chip-btn" id="btn-team2-game" style="background:#1e88e5;" onclick="setActingTeam('team2')">Team 2</button>
-      <button class="team-chip-btn" id="btn-team3-game" style="background:#43a047;" onclick="setActingTeam('team3')">Team 3</button>
-      <button id="btn-clear-map-game" style="flex:0 0 44px;background:#555;border-radius:8px;color:white;font-weight:700;" onclick="setActingTeam('clear')">✕</button>
-    </div>
   </div>
 
   <div class="game-section">

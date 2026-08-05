@@ -22,7 +22,10 @@ const WILDCARD_LABELS = {
 //      There is no Game Master role: every device can claim any team's
 //      turf, manage the Flop, and reveal/remove/add Flop cards. ----
 let myRole = localStorage.getItem('tnc_role') || null; // 'team1'|'team2'|'team3'
-let currentMode = 'team1'; // who a map tap claims for; any device can change this
+// Claiming is always done as your own team (myRole) — there's no
+// "claiming as" switcher anymore. Clearing a claim, however, is still
+// open to any device via the standalone Clear toggle below.
+let clearMode = false;
 
 let claims = {};
 let firebaseReady = false;
@@ -242,18 +245,6 @@ function applyRoleUI() {
     resetBtn.style.display = myRole === 'team1' ? 'inline-block' : 'none';
   }
 
-  // Anyone can claim for any team, so default the acting team to
-  // whichever team this device picked (falls back to team1).
-  if (!currentMode || currentMode === 'clear') {
-    currentMode = (myRole && TEAMS[myRole]) ? myRole : 'team1';
-  }
-  ['team1','team2','team3'].forEach(t => {
-    const b1 = document.getElementById('btn-' + t);
-    const b2 = document.getElementById('btn-' + t + '-game');
-    if (b1) b1.classList.toggle('active', t === currentMode);
-    if (b2) b2.classList.toggle('active', t === currentMode);
-  });
-
   if (!myRole) openRoleOverlay();
 }
 
@@ -342,26 +333,23 @@ function setStatus(msg, cls) {
   });
 }
 
-// Any device can change "claiming as" — there's no Game Master.
-function setActingTeam(mode) {
-  currentMode = mode;
-  ['team1', 'team2', 'team3'].forEach(t => {
-    const b1 = document.getElementById('btn-' + t);
-    const b2 = document.getElementById('btn-' + t + '-game');
-    if (b1) b1.classList.toggle('active', t === mode);
-    if (b2) b2.classList.toggle('active', t === mode);
+function toggleClearMode() {
+  clearMode = !clearMode;
+  ['btn-clear-map', 'btn-clear-map-game'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', clearMode);
   });
-  const c1 = document.getElementById('btn-clear-map');
-  const c2 = document.getElementById('btn-clear-map-game');
-  if (c1) c1.classList.toggle('active', mode === 'clear');
-  if (c2) c2.classList.toggle('active', mode === 'clear');
-  renderPrivateCardsList();
+  showToast(clearMode ? 'Clear mode on — tap a claimed spot to clear it' : 'Clear mode off');
 }
 
 function claimNeighbourhood(id, name) {
   if (!myRole) { openRoleOverlay(); return; }
 
-  if (currentMode === 'clear') {
+  if (clearMode) {
+    if (!claims[id]) {
+      showToast(name + ' is not claimed');
+      return;
+    }
     delete claims[id];
     savePersistedState();
     if (claimsRef && firebaseReady) claimsRef.child(id).remove();
@@ -376,12 +364,12 @@ function claimNeighbourhood(id, name) {
     return;
   }
 
-  claims[id] = currentMode;
+  claims[id] = myRole;
   savePersistedState();
-  if (claimsRef && firebaseReady) claimsRef.child(id).set(currentMode);
+  if (claimsRef && firebaseReady) claimsRef.child(id).set(myRole);
   repaintAllClaims();
   renderFlopGrid();
-  showToast(name + ' → ' + TEAMS[currentMode].name);
+  showToast(name + ' → ' + TEAMS[myRole].name);
 }
 
 // ---- Flop logic (open to any device — no Game Master) ----
@@ -571,8 +559,8 @@ function revealPrivateCard(team) {
 }
 
 function claimPrivateCard(team, cardId) {
-  if (currentMode !== team) {
-    showToast('Switch to ' + TEAMS[team].name + ' to claim this card.');
+  if (myRole !== team) {
+    showToast('Only ' + TEAMS[team].name + ' can claim this card.');
     return;
   }
   const s = privateState[team] || { hand: [], revealed: 0, used: [] };

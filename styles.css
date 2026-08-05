@@ -1,5 +1,4 @@
-
-  :root {
+:root {
     --water: #bfe3f0;
     --ink: #1f2d1f;
   }
@@ -219,46 +218,36 @@
   }
   #search-results div:hover, #search-results div:active { background: #fdf6c9; }
 
-  #team-picker-strip {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #16221680;
-    backdrop-filter: blur(2px);
-    display: flex;
-    gap: 6px;
-    padding: 6px 8px;
-    z-index: 900;
-  }
-  .team-chip-btn {
-    flex: 1;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    min-height: 44px;
-    padding: 0 6px;
-    color: white;
-    font-weight: 700;
-    font-size: 12px;
-    opacity: 0.85;
-    cursor: pointer;
-  }
-  .team-chip-btn.active {
-    border-color: white;
-    opacity: 1;
-  }
   #btn-clear-map {
-    flex: 0 0 44px;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 900;
     background: #555;
     border: 2px solid transparent;
-    border-radius: 8px;
+    border-radius: 999px;
     min-height: 44px;
+    padding: 0 16px;
     color: white;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 13px;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
   }
-  #btn-clear-map.active { border-color: white; }
+  #btn-clear-map.active {
+    border-color: white;
+    background: #e53935;
+  }
+  #btn-clear-map-game {
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    background: #555;
+  }
+  #btn-clear-map-game.active { background: #e53935; }
 
   #status-banner {
     position: absolute;
@@ -541,8 +530,7 @@
     #role-tag { max-width: 72px; font-size: 9px; padding: 5px 7px; }
     #status-banner { max-width: 46vw; font-size: 10px; }
     #search-box { left: 6px; right: 6px; top: 6px; }
-    #team-picker-strip { gap: 6px; padding: 7px; }
-    .team-chip-btn { font-size: 11px; }
+    #btn-clear-map { font-size: 12px; padding: 0 12px; }
     .flop-grid { gap: 6px; }
     .game-section { padding: 10px; }
   }
