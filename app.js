@@ -3,9 +3,13 @@
 const resolvedFirebaseConfig = firebaseConfig;
 
 const TEAMS = {
-  team1: { name: 'Team 1', color: '#e53935' },
-  team2: { name: 'Team 2', color: '#1e88e5' },
-  team3: { name: 'Team 3', color: '#43a047' }
+  // privateColor is used only for that team's own private-card highlight
+  // on the map — in the same hue family as `color` (so it still reads as
+  // "this team"), but distinct enough from both the claimed color and
+  // the Flop's orange highlight to not be mistaken for either.
+  team1: { name: 'Team 1', color: '#e53935', privateColor: '#ec407a' },
+  team2: { name: 'Team 2', color: '#1e88e5', privateColor: '#00acc1' },
+  team3: { name: 'Team 3', color: '#43a047', privateColor: '#c0ca33' }
 };
 
 // ---- Game constants ----
@@ -838,17 +842,17 @@ function styleFor(id) {
 
   // Note: these use plain solid fills (no SVG <pattern>/url() fill) —
   // patterns turned out to be unreliable to get filled AND clickable
-  // across browsers. Private-card highlighting uses one fixed color
-  // (purple) independent of team color — since only your own team ever
-  // sees your own private-card highlight anyway, tying it to the team
-  // color added confusion (it could look identical to an already-claimed
-  // same-color neighbour) without adding any information.
+  // across browsers. Private-card highlighting uses each team's
+  // privateColor — a hue related to that team's color but distinct from
+  // both the claimed color and the Flop's orange, so it reads clearly at
+  // a glance without being mistaken for either.
   if (isOwnPrivateCard) {
+    const privateColor = (myRole && TEAMS[myRole] && TEAMS[myRole].privateColor) || '#00acc1';
     return {
-      color: '#8e24aa',
+      color: privateColor,
       weight: 3,
       dashArray: null,
-      fillColor: '#8e24aa',
+      fillColor: privateColor,
       fillOpacity: 0.4
     };
   }
