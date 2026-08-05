@@ -310,6 +310,7 @@ function initFirebase() {
       privateState = ensurePrivateHands(val);
       savePersistedState();
       renderPrivateCardsList();
+      if (typeof layerById !== 'undefined') repaintAllClaims();
     });
 
     if (!privateTickTimer) {
@@ -555,6 +556,7 @@ function revealPrivateCard(team) {
   if (privateRef && firebaseReady) privateRef.child(team).set(updated);
   const revealedId = s.hand[s.revealed];
   renderPrivateCardsList();
+  if (typeof layerById !== 'undefined') repaintAllClaims();
   showToast(TEAMS[team].name + ' revealed ' + (nameById[revealedId] || '#' + revealedId));
 }
 
@@ -748,13 +750,52 @@ function styleFor(id) {
     return {
       color: TEAMS[team].color,
       weight: 2,
+      dashArray: null,
       fillColor: TEAMS[team].color,
       fillOpacity: fillOpacityForZoom(map.getZoom(), team)
     };
   }
+
+  // Not claimed yet — check for highlight-worthy states, in priority order:
+  // 1. It's in MY OWN team's private hand (only visible to that team).
+  // 2. It's currently in the revealed Flop (wildcards excluded, since
+  //    they aren't real neighbourhoods on the map).
+  const ownHandState = myRole ? privateState[myRole] : null;
+  const isOwnPrivateCard = !!(ownHandState && Array.isArray(ownHandState.hand) &&
+    ownHandState.hand.indexOf(id) !== -1 &&
+    ownHandState.hand.indexOf(id) < ownHandState.revealed);
+  const isInFlop = flopRevealed && flop.includes(id) && !WILDCARD_IDS.includes(id);
+
+  // Note: these use plain solid fills (no SVG <pattern>/url() fill) —
+  // patterns turned out to be unreliable to get filled AND clickable
+  // across browsers. Private-card highlighting uses one fixed color
+  // (purple) independent of team color — since only your own team ever
+  // sees your own private-card highlight anyway, tying it to the team
+  // color added confusion (it could look identical to an already-claimed
+  // same-color neighbour) without adding any information.
+  if (isOwnPrivateCard) {
+    return {
+      color: '#8e24aa',
+      weight: 3,
+      dashArray: null,
+      fillColor: '#8e24aa',
+      fillOpacity: 0.4
+    };
+  }
+  if (isInFlop) {
+    return {
+      color: '#ff8c00',
+      weight: 3,
+      dashArray: null,
+      fillColor: '#ff8c00',
+      fillOpacity: 0.4
+    };
+  }
+
   return {
     color: '#3f7a3d',
     weight: 1,
+    dashArray: null,
     fillColor: '#e9e9e9',
     fillOpacity: 0.15
   };
@@ -769,11 +810,12 @@ function repaintAllClaims() {
 function highlightFeature(e) {
   const layer = e.target;
   const id = layer.feature.properties.id;
-  const team = claims[id];
+  const base = styleFor(id);
   layer.setStyle({
-    weight: 3,
-    color: team && TEAMS[team] ? TEAMS[team].color : '#245623',
-    fillOpacity: Math.min((styleFor(id).fillOpacity || 0.5) + 0.15, 0.95)
+    weight: base.weight + 1,
+    color: base.color,
+    dashArray: base.dashArray || null,
+    fillOpacity: Math.min((base.fillOpacity || 0.5) + 0.15, 0.95)
   });
   layer.bringToFront();
 }
