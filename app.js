@@ -9,9 +9,9 @@ const firebaseConfig = window.firebaseConfig || {
 };
 
 const TEAMS = {
-  team1: { name: 'Team 1', color: '#e53935', emoji: 'ðŸ”´' },
-  team2: { name: 'Team 2', color: '#1e88e5', emoji: 'ðŸ”µ' },
-  team3: { name: 'Team 3', color: '#43a047', emoji: 'ðŸŸ¢' }
+  team1: { name: 'Team 1', color: '#e53935', emoji: '🔴' },
+  team2: { name: 'Team 2', color: '#1e88e5', emoji: '🔵' },
+  team3: { name: 'Team 3', color: '#43a047', emoji: '🟢' }
 };
 
 // ---- Game constants ----
@@ -23,7 +23,7 @@ const WILDCARD_LABELS = {
   'wildcard-rivers': 'Rivers Wild Card',
   'wildcard-coastline': 'Coastline Wild Card'
 };
-// ---- Device role (persisted locally; NOT synced â€” this is what makes
+// ---- Device role (persisted locally; NOT synced — this is what makes
 //      private cards "private" to whichever device picked that team).
 //      There is no Game Master role: every device can claim any team's
 //      turf, manage the Flop, and reveal/remove/add Flop cards. ----
@@ -296,7 +296,7 @@ function initFirebase() {
       claims = snapshot.val() || {};
       firebaseReady = true;
       savePersistedState();
-      setStatus('Live â€” synced', 'connected');
+      setStatus('Live — synced', 'connected');
       repaintAllClaims();
       renderFlopGrid();
     }, (err) => {
@@ -348,7 +348,7 @@ function setStatus(msg, cls) {
   });
 }
 
-// Any device can change "claiming as" â€” there's no Game Master.
+// Any device can change "claiming as" — there's no Game Master.
 function setActingTeam(mode) {
   currentMode = mode;
   ['team1', 'team2', 'team3'].forEach(t => {
@@ -373,7 +373,7 @@ function claimNeighbourhood(id, name) {
     if (claimsRef && firebaseReady) claimsRef.child(id).remove();
     repaintAllClaims();
     renderFlopGrid();
-    showToast(name + ' â€” cleared');
+    showToast(name + ' — cleared');
     return;
   }
 
@@ -387,10 +387,10 @@ function claimNeighbourhood(id, name) {
   if (claimsRef && firebaseReady) claimsRef.child(id).set(currentMode);
   repaintAllClaims();
   renderFlopGrid();
-  showToast(name + ' â†’ ' + TEAMS[currentMode].name);
+  showToast(name + ' → ' + TEAMS[currentMode].name);
 }
 
-// ---- Flop logic (open to any device â€” no Game Master) ----
+// ---- Flop logic (open to any device — no Game Master) ----
 // The Flop is always drawn from the fixed 64-card FLOP_POOL_IDS deck.
 
 function remainingPool() {
@@ -455,7 +455,7 @@ function resetGame() {
   repaintAllClaims();
   renderFlopGrid();
   renderPrivateCardsList();
-  showToast('Game reset â€” fresh flop and private cards');
+  showToast('Game reset — fresh flop and private cards');
 }
 
 function revealFlop() {
@@ -506,7 +506,7 @@ function renderFlopGrid() {
     grid.innerHTML = '';
     addBtn.style.display = 'none';
     sub.textContent = 'Tap below to randomly draw 9 neighbourhoods into play.';
-    revealWrap.innerHTML = '<button class="reveal-flop-btn" onclick="revealFlop()">ðŸŽ² Reveal the Flop</button>';
+    revealWrap.innerHTML = '<button class="reveal-flop-btn" onclick="revealFlop()">🎲 Reveal the Flop</button>';
     if (typeof layerById !== 'undefined') repaintAllClaims();
     return;
   }
@@ -539,7 +539,7 @@ function renderFlopGrid() {
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'flop-remove-btn';
-    removeBtn.textContent = 'âœ•';
+    removeBtn.textContent = '✕';
     removeBtn.onclick = (e) => { e.stopPropagation(); removeFromFlop(id); };
     wrap.appendChild(removeBtn);
 
@@ -640,7 +640,7 @@ function renderPrivateCardsList() {
     if (!canSee) {
       const lockMsg = document.createElement('div');
       lockMsg.className = 'locked-msg';
-      lockMsg.innerHTML = 'ðŸ”’ Hidden';
+      lockMsg.innerHTML = '🔒 Hidden';
       head.appendChild(lockMsg);
       card.appendChild(head);
       const note = document.createElement('div');
@@ -693,7 +693,7 @@ function renderPrivateCardsList() {
       if (i < s.revealed) {
         const cardId = s.hand[i];
         const isUsed = s.used.includes(cardId);
-        tile.textContent = '#' + cardId + ' â€” ' + (nameById[cardId] || 'Unknown');
+        tile.textContent = '#' + cardId + ' — ' + (nameById[cardId] || 'Unknown');
         tile.style.background = isUsed ? '#a9b2a9' : '#fdf6c9';
         tile.style.color = isUsed ? '#4a4a4a' : '#1f2d1f';
         if (!isUsed) {
@@ -806,9 +806,9 @@ function onEachFeature(feature, layer) {
   function tooltipText() {
     const team = claims[props.id];
     let status;
-    if (team && TEAMS[team]) status = ' â€” claimed by ' + TEAMS[team].name;
-    else status = ' â€” available';
-    return `#${props.id} â€” ${props.name}${status}`;
+    if (team && TEAMS[team]) status = ' — claimed by ' + TEAMS[team].name;
+    else status = ' — available';
+    return `#${props.id} — ${props.name}${status}`;
   }
   layer.bindTooltip(tooltipText, { className: 'hood-tooltip', sticky: true });
   layer.on({
@@ -821,10 +821,64 @@ function onEachFeature(feature, layer) {
 }
 
 // Load GeoJSON file and initialize geo-dependent UI once available.
+// The City of Toronto neighbourhood GeoJSON doesn't always use "id"/"name"
+// as the property keys (common alternatives: AREA_SHORT_CODE / AREA_S_CD /
+// AREA_LONG_CODE for id, AREA_NAME / FIELD_7 for name). This helper finds
+// whichever keys are actually present so the app doesn't render "undefined".
+const ID_KEY_CANDIDATES = ['id', 'ID', 'Id', 'AREA_SHORT_CODE', 'AREA_S_CD', 'AREA_LONG_CODE', 'AREA_L_CD', 'FIELD_8', 'HOODNUM', 'HOOD_ID'];
+const NAME_KEY_CANDIDATES = ['name', 'NAME', 'Name', 'AREA_NAME', 'AREA_DESC', 'FIELD_7', 'HOOD_NAME'];
+
+function detectKey(sampleProps, candidates) {
+  return candidates.find(k => sampleProps && sampleProps[k] !== undefined && sampleProps[k] !== null);
+}
+
+function normalizeFeatureProperties(data) {
+  if (!data || !Array.isArray(data.features) || data.features.length === 0) return { idKey: null, nameKey: null };
+  const sample = data.features[0].properties || {};
+  console.log('GeoJSON sample properties (first feature):', sample);
+
+  let idKey = detectKey(sample, ID_KEY_CANDIDATES);
+  let nameKey = detectKey(sample, NAME_KEY_CANDIDATES);
+
+  if (!idKey || !nameKey) {
+    console.warn('Could not auto-detect id/name property keys from the GeoJSON. ' +
+      'Available keys: ' + Object.keys(sample).join(', ') + '. ' +
+      'Edit ID_KEY_CANDIDATES / NAME_KEY_CANDIDATES in app.js to add the correct key names.');
+  }
+
+  data.features.forEach(f => {
+    if (!f.properties) f.properties = {};
+    // Normalize onto properties.id / properties.name so the rest of the
+    // app (which reads f.properties.id / f.properties.name) keeps working.
+    f.properties.id = idKey ? String(f.properties[idKey]) : (f.properties.id !== undefined ? String(f.properties.id) : undefined);
+    let rawName = nameKey ? f.properties[nameKey] : (f.properties.name || 'Unknown');
+    // Strip a trailing " (123)" style numeric suffix, e.g. "Brookhaven-Amesbury (30)" -> "Brookhaven-Amesbury"
+    if (typeof rawName === 'string') {
+      rawName = rawName.replace(/\s*\(\d+\)\s*$/, '').trim();
+    }
+    f.properties.name = rawName;
+  });
+
+  return { idKey, nameKey };
+}
+
 fetch('toronto_140_neighbourhoods.geojson')
   .then(r => r.json())
   .then(data => {
-    loadedGeoData = data;
+    normalizeFeatureProperties(data);
+
+    // Only the 64 neighbourhoods in ALL_NEIGHBOURHOOD_IDS are part of this
+    // game (the rest of the 140 official boundaries are excluded entirely
+    // from the map, search, labels, flop, and private hands).
+    const playSet = new Set(ALL_NEIGHBOURHOOD_IDS);
+    const filteredFeatures = data.features.filter(f => playSet.has(f.properties.id));
+
+    const missingIds = ALL_NEIGHBOURHOOD_IDS.filter(id => !filteredFeatures.some(f => f.properties.id === id));
+    if (missingIds.length) {
+      console.warn('These ids from ALL_NEIGHBOURHOOD_IDS were not found in the GeoJSON:', missingIds);
+    }
+
+    loadedGeoData = { ...data, features: filteredFeatures };
     ELIGIBLE_IDS = loadedGeoData.features.map(f => f.properties.id);
     loadedGeoData.features.forEach(f => { nameById[f.properties.id] = f.properties.name; });
 
@@ -881,7 +935,7 @@ fetch('toronto_140_neighbourhoods.geojson')
       ).slice(0, 8);
       matches.forEach(m => {
         const div = document.createElement('div');
-        div.textContent = `#${m.id} â€” ${m.name}`;
+        div.textContent = `#${m.id} — ${m.name}`;
         div.onclick = () => {
           map.fitBounds(m.layer.getBounds(), { maxZoom: 14 });
           resultsBox.innerHTML = '';
