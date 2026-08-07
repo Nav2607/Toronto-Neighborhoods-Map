@@ -1,4 +1,4 @@
-# Toronto Neighbourhood Challenge
+# Jet Lag The Game - Toronto Stateside Scramble
 
 A real-time multiplayer map game where three teams compete to claim Toronto
 neighbourhoods. Any device can join as a team, claim territory, and manage
